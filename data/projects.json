@@ -1,0 +1,16 @@
+[
+  {
+    "id": "PRJ-001",
+    "name": "Ristrutturazione Edificio A",
+    "budget_authorized": 150000.00,
+    "actual_cost": 87500.50,
+    "last_updated": "2026-07-27"
+  },
+  {
+    "id": "PRJ-002",
+    "name": "Manutenzione Impianti Lotto B",
+    "budget_authorized": 45000.00,
+    "actual_cost": 41200.00,
+    "last_updated": "2026-07-26"
+  }
+]
