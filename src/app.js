@@ -1,12 +1,10 @@
 import { Octokit } from 'https://esm.sh/@octokit/rest@20.0.2';
 
-const OVERHEAD_RATE = 0.05; // 5% Costi di gestione (overhead)
+const OVERHEAD_RATE = 0.05; // 5% Costi di gestione
 
-// Strict Repo Context Resolution
 function getRepoContext() {
   const hostname = window.location.hostname;
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
-
   if (hostname.endsWith('.github.io')) {
     const owner = hostname.split('.')[0];
     const repo = pathSegments.length > 0 ? pathSegments[0] : `${owner}.github.io`;
@@ -22,12 +20,20 @@ let octokit = null;
 let currentFileSha = null;
 let localProjectsState = [];
 
-// Safe UTF-8 Base64 Transcoding
 const encodeBase64Utf8 = (str) => btoa(unescape(encodeURIComponent(str)));
 const decodeBase64Utf8 = (b64) => decodeURIComponent(escape(atob(b64)));
 
 const fmtCurr = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
 const fmtPct = (val) => new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 2 }).format(val / 100);
+
+function closeProjectModal() {
+  document.getElementById('project-modal').classList.add('hidden');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m]));
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const token = sessionStorage.getItem('gh_pat');
@@ -200,7 +206,6 @@ function renderDashboard(projects) {
     
     // Calcolo Costi Diretti
     const directCost = (Number(p.costs?.materials) || 0) + (Number(p.costs?.labor) || 0) + (Number(p.costs?.rentals) || 0);
-    
     // Applicazione Coefficiente 5% Costi Gestione
     const totalCostWithOverhead = directCost * (1 + OVERHEAD_RATE);
     
@@ -255,8 +260,3 @@ function openProjectModal(index) {
   document.getElementById('form-cost-rentals').value = p ? (p.costs?.rentals || 0) : 0;
   document.getElementById('project-modal').classList.remove('hidden');
 }
-
-function closeProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
-function escapeHtml(str) { return String(str).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m])); }
-function closeProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
-function escapeHtml(str) { return String(str).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m])); }
