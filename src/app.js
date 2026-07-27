@@ -1,8 +1,7 @@
-// src/app.js
+import { Octokit } from 'https://esm.sh/@octokit/rest@20.0.2';
 
 /**
- * Determinazione dinamica del contesto del repository da window.location
- * Gestisce sia dominii *.github.io (inclusi sotto-percorsi) che ambienti locali.
+ * Determinazione automatica del contesto Repository da window.location
  */
 function getRepoContext() {
   const hostname = window.location.hostname;
@@ -10,15 +9,14 @@ function getRepoContext() {
 
   if (hostname.endsWith('.github.io')) {
     const owner = hostname.split('.')[0];
-    // Se la pagina è root (es. username.github.io/), il repo è username.github.io
     const repo = pathSegments.length > 0 ? pathSegments[0] : `${owner}.github.io`;
     return { owner, repo };
   }
 
-  // Fallback per test o sviluppo locale (es. localhost / 127.0.0.1)
+  // Fallback per test in locale (es. localhost)
   return {
-    owner: 'OWNER_PLACEHOLDER',
-    repo: 'REPO_PLACEHOLDER'
+    owner: 'P1pp89',
+    repo: 'dashboard-cantieri'
   };
 }
 
@@ -26,9 +24,8 @@ const { owner: REPO_OWNER, repo: REPO_NAME } = getRepoContext();
 const FILE_PATH = 'data/projects.json';
 
 let octokit = null;
-let currentFileSha = null;
 
-// Utility di formattazione locale (IT/EUR)
+// Formattazione localizzata IT/EUR
 const fmtCurr = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
 const fmtPct = (val) => new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 2 }).format(val / 100);
 
@@ -56,17 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Inizializza il client Octokit con gestione del fallback dell'oggetto Globale UMD
- * @param {string} token - Fine-Grained Personal Access Token di GitHub
+ * Inizializzazione Client Octokit SDK
+ * @param {string} token 
  */
 function initOctokit(token) {
   try {
-    const OctokitConstructor = window.Octokit?.Octokit || window.Octokit;
-    if (!OctokitConstructor) {
-      throw new Error('Libreria Octokit SDK non caricata correttamente nel DOM.');
-    }
-
-    octokit = new OctokitConstructor({ auth: token });
+    octokit = new Octokit({ auth: token });
     
     document.getElementById('auth-modal')?.classList.add('hidden');
     document.getElementById('btn-logout')?.classList.remove('hidden');
@@ -79,7 +71,7 @@ function initOctokit(token) {
 }
 
 /**
- * Decodifica robusta da Base64 UTF-8 per il supporto a caratteri speciali e accentati
+ * Decodifica Base64 UTF-8
  * @param {string} b64Str 
  * @returns {string}
  */
@@ -91,7 +83,7 @@ function decodeBase64Utf8(b64Str) {
 }
 
 /**
- * Recupera il file JSON di contabilità tramite GitHub REST API v3
+ * Fetch dati da GitHub REST API v3
  */
 async function loadDashboardData() {
   if (!octokit) return;
@@ -107,19 +99,18 @@ async function loadDashboardData() {
       }
     });
 
-    currentFileSha = data.sha;
     const jsonContent = decodeBase64Utf8(data.content);
     const projects = JSON.parse(jsonContent);
 
     renderDashboard(projects);
   } catch (err) {
-    console.error('Errore durante il recupero dei dati:', err);
+    console.error('Errore API GitHub:', err);
     if (err.status === 401) {
-      alert('Autenticazione fallita: Token non valido, privo dei permessi necessari o scaduto.');
+      alert('Autenticazione fallita: Token PAT non valido o privo dei permessi necessari.');
       sessionStorage.removeItem('gh_pat');
       window.location.reload();
     } else if (err.status === 404) {
-      alert(`Risorsa non trovata: Verificare l'esistenza del file "${FILE_PATH}" nel repository ${REPO_OWNER}/${REPO_NAME}.`);
+      alert(`Risorsa non trovata: Verificare l'esistenza di "${FILE_PATH}" nel repo ${REPO_OWNER}/${REPO_NAME}.`);
     } else {
       alert(`Errore API GitHub [HTTP ${err.status || 'N/A'}]: ${err.message}`);
     }
@@ -127,8 +118,8 @@ async function loadDashboardData() {
 }
 
 /**
- * Calcola e inserisce a DOM le metriche contabili e la tabella complesse
- * @param {Array<Object>} projects - Array degli oggetti cantiere
+ * Rendering Metriche e Tabella Avanzamento
+ * @param {Array<Object>} projects 
  */
 function renderDashboard(projects) {
   const tbody = document.getElementById('projects-table-body');
@@ -185,11 +176,6 @@ function renderDashboard(projects) {
   if (elemProfit) elemProfit.textContent = fmtPct(totalProfitPercent);
 }
 
-/**
- * Sanitizzazione base delle stringhe per prevenire XSS
- * @param {string} str 
- * @returns {string}
- */
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)
