@@ -1,12 +1,12 @@
 [
   {
-    "id": "22151",
-    "name": "Eliporto",
-    "budget_authorized": 75500,
-    "discount_applied": 13,
+    "id": "PRV",
+    "name": "Prov",
+    "budget_authorized": 0,
+    "discount_applied": 0,
     "costs": {
-      "materials": 46287.34,
-      "labor": 4800,
+      "materials": 0,
+      "labor": 0,
       "rentals": 0
     },
     "last_updated": "2026-07-27T14:28:20.872Z"
@@ -14,11 +14,11 @@
   {
     "id": "PRV",
     "name": "Prova",
-    "budget_authorized": 10000,
-    "discount_applied": 13,
+    "budget_authorized": 0,
+    "discount_applied": 0,
     "costs": {
-      "materials": 1000,
-      "labor": 1000,
+      "materials": 0,
+      "labor": 0,
       "rentals": 0
     },
     "last_updated": "2026-07-27T18:34:59.572Z"
