@@ -5,20 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Contabilità Cantieri</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@octokit/rest@19.0.7/dist/index.umd.min.js"></script>
 </head>
 <body class="h-full flex flex-col font-sans">
-  <!-- Auth Overlay -->
+
+  <!-- Auth Modal -->
   <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
     <div class="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-2xl max-w-md w-full">
       <h2 class="text-xl font-bold mb-4 text-emerald-400">Autenticazione GitHub</h2>
-      <p class="text-sm text-slate-400 mb-6">Inserisci un Personal Access Token (PAT) con permessi <code class="text-slate-200">contents:read/write</code> per accedere ai dati di cantiere.</p>
-      <input type="password" id="pat-input" placeholder="ghp_..." class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 mb-4 focus:outline-none focus:border-emerald-500">
+      <p class="text-sm text-slate-400 mb-6">Inserisci un Fine-Grained Personal Access Token (PAT) con permessi <code class="text-slate-200">contents:read/write</code> per accedere ai dati di cantiere.</p>
+      <input type="password" id="pat-input" placeholder="github_pat_..." class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 mb-4 focus:outline-none focus:border-emerald-500 font-mono text-sm">
       <button id="btn-login" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 transition font-semibold rounded-lg">Autentica</button>
     </div>
   </div>
 
-  <!-- App Header -->
+  <!-- Header -->
   <header class="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center space-x-3">
       <div class="h-3 w-3 rounded-full bg-emerald-500"></div>
@@ -29,7 +29,7 @@
 
   <!-- Main Dashboard -->
   <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
-    <!-- Global Metrics Summary -->
+    <!-- Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div class="bg-slate-800/60 border border-slate-800 p-5 rounded-xl">
         <span class="text-xs uppercase tracking-wider text-slate-400">Budget Autorizzato Totale</span>
@@ -45,7 +45,7 @@
       </div>
     </div>
 
-    <!-- Data Table -->
+    <!-- Table -->
     <div class="bg-slate-800/40 border border-slate-800 rounded-xl overflow-hidden">
       <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
         <h2 class="font-semibold text-slate-200">Avanzamento Economico Commesse</h2>
@@ -64,7 +64,7 @@
             </tr>
           </thead>
           <tbody id="projects-table-body" class="divide-y divide-slate-800/50">
-            <!-- Dynamic Rows -->
+            <!-- Table rows dynamically populated -->
           </tbody>
         </table>
       </div>
@@ -73,4 +73,5 @@
 
   <script type="module" src="src/app.js"></script>
 </body>
+</html>
 </html>
