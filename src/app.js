@@ -1,6 +1,6 @@
 import { Octokit } from 'https://esm.sh/@octokit/rest@20.0.2';
 
-const OVERHEAD_RATE = 0.05; // 5% Costi di gestione
+const MANAGEMENT_FEE_RATE = 0.05; // 5% decurtato dall'utile lordo
 
 function getRepoContext() {
   const hostname = window.location.hostname;
@@ -199,21 +199,26 @@ function renderDashboard(projects) {
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  let totalAuthorizedNet = 0, totalActualCost = 0;
+  let totalAuthorizedNet = 0, totalActualCost = 0, totalNetProfit = 0;
 
   projects.forEach((p, idx) => {
     const netBudget = (Number(p.budget_authorized) || 0) * (1 - (Number(p.discount_applied) || 0) / 100);
     
-    // Calcolo Costi Diretti
+    // Costo Puro (Materiali + Manodopera + Noli)
     const directCost = (Number(p.costs?.materials) || 0) + (Number(p.costs?.labor) || 0) + (Number(p.costs?.rentals) || 0);
-    // Applicazione Coefficiente 5% Costi Gestione
-    const totalCostWithOverhead = directCost * (1 + OVERHEAD_RATE);
     
-    const profitNominal = netBudget - totalCostWithOverhead;
-    const profitPercent = netBudget > 0 ? (profitNominal / netBudget) * 100 : 0;
+    // Utile Operativo Lordo
+    const grossProfit = netBudget - directCost;
+    
+    // Utile Netto (Sottraggo il 5% di costi di gestione solo se c'è margine positivo)
+    const managementFee = grossProfit > 0 ? (grossProfit * MANAGEMENT_FEE_RATE) : 0;
+    const netProfit = grossProfit - managementFee;
+    
+    const profitPercent = netBudget > 0 ? (netProfit / netBudget) * 100 : 0;
 
     totalAuthorizedNet += netBudget;
-    totalActualCost += totalCostWithOverhead;
+    totalActualCost += directCost;
+    totalNetProfit += netProfit;
 
     let badgeColor = profitPercent < 10 ? 'text-rose-400 bg-rose-950/40 border-rose-800' : 
                      profitPercent < 25 ? 'text-amber-400 bg-amber-950/40 border-amber-800' : 
@@ -228,8 +233,8 @@ function renderDashboard(projects) {
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.materials || 0)}</td>
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.labor || 0)}</td>
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.rentals || 0)}</td>
-      <td class="px-4 py-3 text-right font-mono text-amber-300 font-semibold">${fmtCurr(totalCostWithOverhead)}</td>
-      <td class="px-4 py-3 text-right font-mono">${fmtCurr(profitNominal)}</td>
+      <td class="px-4 py-3 text-right font-mono text-amber-300 font-semibold">${fmtCurr(directCost)}</td>
+      <td class="px-4 py-3 text-right font-mono text-emerald-400 font-semibold">${fmtCurr(netProfit)}</td>
       <td class="px-4 py-3 text-right font-mono"><span class="px-2 py-0.5 rounded-full text-xs font-semibold border ${badgeColor}">${fmtPct(profitPercent)}</span></td>
       <td class="px-4 py-3 text-center">
         <button class="btn-edit text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-1 rounded border border-emerald-900 bg-emerald-950/30" data-index="${idx}">Edit</button>
@@ -240,10 +245,11 @@ function renderDashboard(projects) {
 
   document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', e => openProjectModal(e.target.dataset.index)));
 
-  const totalProfitPercent = totalAuthorizedNet > 0 ? ((totalAuthorizedNet - totalActualCost) / totalAuthorizedNet) * 100 : 0;
+  const totalProfitPercent = totalAuthorizedNet > 0 ? (totalNetProfit / totalAuthorizedNet) * 100 : 0;
+  
   document.getElementById('metric-authorized').textContent = fmtCurr(totalAuthorizedNet);
   document.getElementById('metric-actual').textContent = fmtCurr(totalActualCost);
-  document.getElementById('metric-profit-nominal').textContent = fmtCurr(totalAuthorizedNet - totalActualCost);
+  document.getElementById('metric-profit-nominal').textContent = fmtCurr(totalNetProfit);
   document.getElementById('metric-profit-pct').textContent = fmtPct(totalProfitPercent);
 }
 
