@@ -1,5 +1,9 @@
+// src/app.js
 import { Octokit } from 'https://esm.sh/@octokit/rest@20.0.2';
 
+/**
+ * Determinazione automatica del contesto Repository da window.location
+ */
 function getRepoContext() {
   const hostname = window.location.hostname;
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -10,6 +14,7 @@ function getRepoContext() {
     return { owner, repo };
   }
 
+  // Fallback per ambiente di test locale
   return {
     owner: 'P1pp89',
     repo: 'dashboard-cantieri'
@@ -23,6 +28,7 @@ let octokit = null;
 let currentFileSha = null;
 let localProjectsState = [];
 
+// Formattatori contabili IT
 const fmtCurr = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
 const fmtPct = (val) => new Intl.NumberFormat('it-IT', { style: 'percent', minimumFractionDigits: 2 }).format(val / 100);
 
@@ -48,7 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-refresh')?.addEventListener('click', loadDashboardData);
 
-  // Modal handlers
   document.getElementById('btn-add-project')?.addEventListener('click', () => openProjectModal(-1));
   document.getElementById('btn-close-modal')?.addEventListener('click', closeProjectModal);
   document.getElementById('btn-cancel-modal')?.addEventListener('click', closeProjectModal);
@@ -86,8 +91,11 @@ function encodeBase64Utf8(str) {
   return btoa(binary);
 }
 
+/**
+ * Sincronizza lo stato remoto del file data/projects.json recuperando dati e SHA
+ */
 async function loadDashboardData() {
-  if (!octokit) return;
+  if (!octokit) return false;
 
   try {
     const { data } = await octokit.rest.repos.getContent({
@@ -105,19 +113,27 @@ async function loadDashboardData() {
     localProjectsState = JSON.parse(jsonContent);
 
     renderDashboard(localProjectsState);
+    return true;
   } catch (err) {
-    console.error('Errore API GitHub:', err);
+    if (err.status === 404) {
+      console.warn(`File "${FILE_PATH}" non presente sul repository. Inizializzazione nuovo stato.`);
+      currentFileSha = null;
+      localProjectsState = [];
+      renderDashboard(localProjectsState);
+      return true;
+    }
+    
+    console.error('Errore durante la lettura da GitHub:', err);
     if (err.name === 'TypeError' && err.message.includes('fetch')) {
-      alert('Errore di Connessione (Failed to Fetch): Verificare la presenza di AdBlocker o estensioni di rete che bloccano le chiamate verso api.github.com.');
+      alert('Errore di Connessione (Failed to Fetch): Disattivare AdBlocker/Extension che bloccano api.github.com.');
     } else if (err.status === 401) {
-      alert('Autenticazione fallita: Token PAT non valido.');
+      alert('Autenticazione fallita: Token PAT non valido o privo di permessi.');
       sessionStorage.removeItem('gh_pat');
       window.location.reload();
-    } else if (err.status === 404) {
-      alert(`Risorsa non trovata: Inizializzare il file "${FILE_PATH}" su repository.`);
     } else {
       alert(`Errore API [HTTP ${err.status || 'N/A'}]: ${err.message}`);
     }
+    return false;
   }
 }
 
@@ -229,7 +245,10 @@ async function handleFormSubmit(e) {
   const btnSave = document.getElementById('btn-save-project');
   
   btnSave.disabled = true;
-  btnSave.textContent = 'Commit in corso...';
+  btnSave.textContent = 'Verifica SHA & Commit...';
+
+  // Forzatura della riesecuzione getContent prima della scrittura
+  await loadDashboardData();
 
   const updatedProject = {
     id: document.getElementById('form-id').value.trim(),
@@ -261,9 +280,12 @@ async function handleFormSubmit(e) {
   }
 }
 
+/**
+ * Effettua la Scrittura/Update su GitHub API v3
+ */
 async function commitDataToGithub(commitMessage) {
-  if (!octokit || !currentFileSha) {
-    alert('Errore: SHA del file non presente. Impossibile committare.');
+  if (!octokit) {
+    alert('Errore: Client GitHub non inizializzato.');
     return false;
   }
 
@@ -271,17 +293,23 @@ async function commitDataToGithub(commitMessage) {
     const updatedJsonStr = JSON.stringify(localProjectsState, null, 2);
     const encodedContent = encodeBase64Utf8(updatedJsonStr);
 
-    const response = await octokit.rest.repos.createOrUpdateFileContents({
+    const payload = {
       owner: REPO_OWNER,
       repo: REPO_NAME,
       path: FILE_PATH,
       message: commitMessage,
       content: encodedContent,
-      sha: currentFileSha,
       headers: {
         'x-github-api-version': '2022-11-28'
       }
-    });
+    };
+
+    // Il parametro SHA viene incluso SOLO se il file esiste già su GitHub (aggiornamento)
+    if (currentFileSha) {
+      payload.sha = currentFileSha;
+    }
+
+    const response = await octokit.rest.repos.createOrUpdateFileContents(payload);
 
     currentFileSha = response.data.content.sha;
     return true;
