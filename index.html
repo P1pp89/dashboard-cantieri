@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Contabilità Cantieri</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@octokit/rest@19.0.7/dist/index.umd.min.js"></script>
+</head>
+<body class="h-full flex flex-col font-sans">
+  <!-- Auth Overlay -->
+  <div id="auth-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="bg-slate-800 border border-slate-700 p-8 rounded-xl shadow-2xl max-w-md w-full">
+      <h2 class="text-xl font-bold mb-4 text-emerald-400">Autenticazione GitHub</h2>
+      <p class="text-sm text-slate-400 mb-6">Inserisci un Personal Access Token (PAT) con permessi <code class="text-slate-200">contents:read/write</code> per accedere ai dati di cantiere.</p>
+      <input type="password" id="pat-input" placeholder="ghp_..." class="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 mb-4 focus:outline-none focus:border-emerald-500">
+      <button id="btn-login" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 transition font-semibold rounded-lg">Autentica</button>
+    </div>
+  </div>
+
+  <!-- App Header -->
+  <header class="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex justify-between items-center">
+    <div class="flex items-center space-x-3">
+      <div class="h-3 w-3 rounded-full bg-emerald-500"></div>
+      <h1 class="font-bold text-lg text-slate-100">Controllo Gestione Cantieri</h1>
+    </div>
+    <button id="btn-logout" class="hidden text-xs text-slate-400 hover:text-rose-400 border border-slate-700 px-3 py-1.5 rounded-md">Disconnetti</button>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="flex-1 p-6 max-w-7xl w-full mx-auto space-y-6">
+    <!-- Global Metrics Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-slate-800/60 border border-slate-800 p-5 rounded-xl">
+        <span class="text-xs uppercase tracking-wider text-slate-400">Budget Autorizzato Totale</span>
+        <div id="metric-authorized" class="text-2xl font-mono font-bold mt-2 text-slate-100">€ 0.00</div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-800 p-5 rounded-xl">
+        <span class="text-xs uppercase tracking-wider text-slate-400">Costo Effettivo Cantiere</span>
+        <div id="metric-actual" class="text-2xl font-mono font-bold mt-2 text-amber-400">€ 0.00</div>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-800 p-5 rounded-xl">
+        <span class="text-xs uppercase tracking-wider text-slate-400">Utile Residuo Medio</span>
+        <div id="metric-profit" class="text-2xl font-mono font-bold mt-2 text-emerald-400">0.00%</div>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-slate-800/40 border border-slate-800 rounded-xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+        <h2 class="font-semibold text-slate-200">Avanzamento Economico Commesse</h2>
+        <button id="btn-refresh" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition">Aggiorna Dati</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-300">
+          <thead class="bg-slate-800/80 uppercase text-[10px] tracking-wider text-slate-400">
+            <tr>
+              <th class="px-6 py-3">ID Commessa</th>
+              <th class="px-6 py-3">Descrizione Cantiere</th>
+              <th class="px-6 py-3 text-right">Autorizzato (€)</th>
+              <th class="px-6 py-3 text-right">Costo Cantiere (€)</th>
+              <th class="px-6 py-3 text-right">Utile (€)</th>
+              <th class="px-6 py-3 text-right">Utile Residuo (%)</th>
+            </tr>
+          </thead>
+          <tbody id="projects-table-body" class="divide-y divide-slate-800/50">
+            <!-- Dynamic Rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
