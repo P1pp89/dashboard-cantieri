@@ -1,6 +1,8 @@
 import { Octokit } from 'https://esm.sh/@octokit/rest@20.0.2';
 
-// 1. Strict Repo Context Resolution
+const OVERHEAD_RATE = 0.05; // 5% Costi di gestione (overhead)
+
+// Strict Repo Context Resolution
 function getRepoContext() {
   const hostname = window.location.hostname;
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -10,7 +12,7 @@ function getRepoContext() {
     const repo = pathSegments.length > 0 ? pathSegments[0] : `${owner}.github.io`;
     return { owner, repo };
   }
-  return { owner: 'P1pp89', repo: 'dashboard-cantieri' }; // Hard-coded fallback for dev
+  return { owner: 'P1pp89', repo: 'dashboard-cantieri' };
 }
 
 const { owner: REPO_OWNER, repo: REPO_NAME } = getRepoContext();
@@ -20,7 +22,7 @@ let octokit = null;
 let currentFileSha = null;
 let localProjectsState = [];
 
-// 2. Safe UTF-8 Base64 Transcoding (Evita HTTP 422 Corrupted Payload)
+// Safe UTF-8 Base64 Transcoding
 const encodeBase64Utf8 = (str) => btoa(unescape(encodeURIComponent(str)));
 const decodeBase64Utf8 = (b64) => decodeURIComponent(escape(atob(b64)));
 
@@ -54,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initOctokit(token) {
-  // Configurazione Octokit con fetch bypass per cache nativa
   octokit = new Octokit({ 
     auth: token,
     request: { fetch: (url, opts) => fetch(url, { ...opts, cache: "no-store" }) }
@@ -77,7 +78,7 @@ async function loadDashboardData() {
       path: FILE_PATH,
       headers: {
         'x-github-api-version': '2022-11-28',
-        'If-None-Match': '' // Aggressive cache invalidation
+        'If-None-Match': ''
       }
     });
 
@@ -134,7 +135,6 @@ async function handleFormSubmit(e) {
   btnSave.disabled = true;
   btnSave.textContent = 'Sync state...';
 
-  // Sincronizzazione preventiva dello SHA per evitare HTTP 409/422
   const syncSuccess = await loadDashboardData();
   if (!syncSuccess) {
     btnSave.disabled = false;
@@ -188,7 +188,6 @@ function handleApiError(err, context) {
   }
 }
 
-// GUI Rendering logic
 function renderDashboard(projects) {
   const tbody = document.getElementById('projects-table-body');
   if (!tbody) return;
@@ -198,12 +197,18 @@ function renderDashboard(projects) {
 
   projects.forEach((p, idx) => {
     const netBudget = (Number(p.budget_authorized) || 0) * (1 - (Number(p.discount_applied) || 0) / 100);
-    const actualCost = (Number(p.costs?.materials) || 0) + (Number(p.costs?.labor) || 0) + (Number(p.costs?.rentals) || 0);
-    const profitNominal = netBudget - actualCost;
+    
+    // Calcolo Costi Diretti
+    const directCost = (Number(p.costs?.materials) || 0) + (Number(p.costs?.labor) || 0) + (Number(p.costs?.rentals) || 0);
+    
+    // Applicazione Coefficiente 5% Costi Gestione
+    const totalCostWithOverhead = directCost * (1 + OVERHEAD_RATE);
+    
+    const profitNominal = netBudget - totalCostWithOverhead;
     const profitPercent = netBudget > 0 ? (profitNominal / netBudget) * 100 : 0;
 
     totalAuthorizedNet += netBudget;
-    totalActualCost += actualCost;
+    totalActualCost += totalCostWithOverhead;
 
     let badgeColor = profitPercent < 10 ? 'text-rose-400 bg-rose-950/40 border-rose-800' : 
                      profitPercent < 25 ? 'text-amber-400 bg-amber-950/40 border-amber-800' : 
@@ -218,7 +223,7 @@ function renderDashboard(projects) {
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.materials || 0)}</td>
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.labor || 0)}</td>
       <td class="px-4 py-3 text-right font-mono text-slate-400">${fmtCurr(p.costs?.rentals || 0)}</td>
-      <td class="px-4 py-3 text-right font-mono text-amber-300 font-semibold">${fmtCurr(actualCost)}</td>
+      <td class="px-4 py-3 text-right font-mono text-amber-300 font-semibold">${fmtCurr(totalCostWithOverhead)}</td>
       <td class="px-4 py-3 text-right font-mono">${fmtCurr(profitNominal)}</td>
       <td class="px-4 py-3 text-right font-mono"><span class="px-2 py-0.5 rounded-full text-xs font-semibold border ${badgeColor}">${fmtPct(profitPercent)}</span></td>
       <td class="px-4 py-3 text-center">
@@ -251,5 +256,7 @@ function openProjectModal(index) {
   document.getElementById('project-modal').classList.remove('hidden');
 }
 
+function closeProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
+function escapeHtml(str) { return String(str).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m])); }
 function closeProjectModal() { document.getElementById('project-modal').classList.add('hidden'); }
 function escapeHtml(str) { return String(str).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'}[m])); }
