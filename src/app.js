@@ -21,9 +21,13 @@ function closeProjectModal() {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-login-github').addEventListener('click', async () => {
+    // Usiamo origin+pathname "puliti" (senza query o hash residui) come redirect,
+    // altrimenti eventuali frammenti di un tentativo precedente si accumulano
+    // nell'URL di ritorno e Supabase scarta tutto come "bad_oauth_state".
+    const cleanRedirect = window.location.origin + window.location.pathname;
     await supabase.auth.signInWithOAuth({
       provider: 'github',
-      options: { redirectTo: window.location.href }
+      options: { redirectTo: cleanRedirect }
     });
   });
 
@@ -60,6 +64,12 @@ function showLoginScreen() {
 }
 
 function showAppForUser(session) {
+  // Ripulisce l'URL da eventuali token/parametri OAuth residui dopo il login,
+  // così un refresh della pagina non tenta di rileggere un fragment scaduto.
+  if (window.location.hash || window.location.search) {
+    window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+  }
+
   const username = session.user.user_metadata?.user_name || session.user.email;
   document.getElementById('auth-modal').classList.add('hidden');
   document.getElementById('btn-logout').classList.remove('hidden');
