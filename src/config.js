@@ -1,2 +1,5 @@
-export const SUPABASE_URL = 'https://eegwambzlytdjwiykkit.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlZ3dhbWJ6bHl0ZGp3aXlra2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyMzc0ODksImV4cCI6MjEwMDgxMzQ4OX0.EP92A6KqmWJCdLeLa4s0bGKKun99_uPsetgxieSkr_8';
+// Stesso progetto Supabase usato da "Controlli Industriali" — un solo
+// database condiviso tra le due dashboard, per non consumare due slot
+// separati sul piano gratuito.
+export const SUPABASE_URL = 'https://pynodlnwozlyxcfwfqvp.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_C61rsZm3YWmvz82MHGkTAg_RGQQXCL6';
