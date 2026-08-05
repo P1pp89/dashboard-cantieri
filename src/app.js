@@ -3,6 +3,11 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 
 const MANAGEMENT_FEE_RATE = 0.05; // 5% decurtato dall'utile lordo
 
+// Solo questo account GitHub può accedere (stessa regola di Controlli Industriali,
+// applicata qui anche lato client per un messaggio chiaro; la vera protezione
+// resta comunque la RLS sul database).
+const AUTHORIZED_GITHUB_USERNAME = 'P1pp89';
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let localProjectsState = [];
@@ -71,6 +76,16 @@ function showAppForUser(session) {
   }
 
   const username = session.user.user_metadata?.user_name || session.user.email;
+
+  if (!username || username.toLowerCase() !== AUTHORIZED_GITHUB_USERNAME.toLowerCase()) {
+    // Autenticato con GitHub, ma non è l'account autorizzato: nega e disconnetti subito
+    const authError = document.getElementById('auth-error');
+    authError.textContent = `Accesso negato. Solo l'account GitHub "${AUTHORIZED_GITHUB_USERNAME}" è autorizzato. Sei autenticato come: "${username || 'sconosciuto'}"`;
+    authError.classList.remove('hidden');
+    supabase.auth.signOut();
+    return;
+  }
+
   document.getElementById('auth-modal').classList.add('hidden');
   document.getElementById('btn-logout').classList.remove('hidden');
   document.getElementById('btn-add-project').classList.remove('hidden');
