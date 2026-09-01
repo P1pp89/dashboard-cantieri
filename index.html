@@ -20,6 +20,27 @@
     .calc-btn:hover { background-color: rgb(71 85 105 / 1); } /* slate-600 */
     .calc-btn.calc-op { color: rgb(52 211 153 / 1); } /* emerald-400 */
     .calc-btn.calc-sci { font-size: 0.75rem; color: rgb(251 191 36 / 1); } /* amber-400 */
+
+    @media print {
+      body { background: #fff !important; color: #000 !important; }
+      #auth-modal, #project-modal, #calculator-modal,
+      header, #btn-refresh, #btn-print,
+      .btn-edit, .btn-delete,
+      th:last-child, td:last-child {
+        display: none !important;
+      }
+      main { padding: 0 !important; max-width: 100% !important; }
+      .bg-slate-800\/60, .bg-slate-800\/40, .bg-slate-800\/80, .bg-slate-900\/50 {
+        background: #fff !important;
+        border-color: #ccc !important;
+      }
+      table, th, td { color: #000 !important; border-color: #ccc !important; }
+      th { background: #f1f5f9 !important; }
+      .text-emerald-400, .text-amber-400, .text-amber-300, .text-rose-400, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 {
+        color: #000 !important;
+      }
+      span[class*="rounded-full"] { border: 1px solid #999 !important; background: #fff !important; }
+    }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans">
@@ -192,7 +213,10 @@
     <div class="bg-slate-800/40 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
       <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
         <h2 class="font-semibold text-slate-200">Avanzamento Economico</h2>
-        <button id="btn-refresh" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition font-medium">Aggiorna</button>
+        <div class="flex items-center gap-2">
+          <button id="btn-print" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition font-medium">🖨️ Stampa</button>
+          <button id="btn-refresh" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded transition font-medium">Aggiorna</button>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm text-slate-300">
