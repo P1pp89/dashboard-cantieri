@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('btn-refresh').addEventListener('click', loadDashboardData);
+  document.getElementById('btn-print').addEventListener('click', () => window.print());
   document.getElementById('btn-add-project').addEventListener('click', () => openProjectModal(-1));
   document.getElementById('btn-close-modal').addEventListener('click', closeProjectModal);
   document.getElementById('btn-cancel-modal').addEventListener('click', closeProjectModal);
@@ -157,6 +158,30 @@ async function saveProjectToSupabase(project) {
   return true;
 }
 
+async function deleteProjectFromSupabase(id) {
+  const { error } = await supabase.from('projects').delete().eq('id', id);
+
+  if (error) {
+    handleApiError(error, 'eliminazione');
+    return false;
+  }
+  return true;
+}
+
+async function handleDeleteProject(index) {
+  const idx = parseInt(index, 10);
+  const project = localProjectsState[idx];
+  if (!project) return;
+
+  const confirmed = window.confirm(`Eliminare definitivamente la commessa "${project.id} — ${project.name}"?\n\nQuesta azione non può essere annullata.`);
+  if (!confirmed) return;
+
+  const success = await deleteProjectFromSupabase(project.id);
+  if (success) {
+    await loadDashboardData();
+  }
+}
+
 async function handleFormSubmit(e) {
   e.preventDefault();
 
@@ -241,14 +266,16 @@ function renderDashboard(projects) {
       <td class="px-4 py-3 text-right font-mono text-amber-300 font-semibold">${fmtCurr(directCost)}</td>
       <td class="px-4 py-3 text-right font-mono text-emerald-400 font-semibold">${fmtCurr(netProfit)}</td>
       <td class="px-4 py-3 text-right font-mono"><span class="px-2 py-0.5 rounded-full text-xs font-semibold border ${badgeColor}">${fmtPct(profitPercent)}</span></td>
-      <td class="px-4 py-3 text-center">
+      <td class="px-4 py-3 text-center whitespace-nowrap">
         <button class="btn-edit text-xs text-emerald-400 hover:text-emerald-300 font-semibold px-2 py-1 rounded border border-emerald-900 bg-emerald-950/30" data-index="${idx}">Edit</button>
+        <button class="btn-delete text-xs text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded border border-rose-900 bg-rose-950/30 ml-1.5" data-index="${idx}">Elimina</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 
   document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', e => openProjectModal(e.target.dataset.index)));
+  document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', e => handleDeleteProject(e.target.dataset.index)));
 
   const totalProfitPercent = totalAuthorizedNet > 0 ? (totalNetProfit / totalAuthorizedNet) * 100 : 0;
 
