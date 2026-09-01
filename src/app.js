@@ -288,7 +288,10 @@ function closeCalculator() {
 }
 
 function calcUpdateDisplay(text) {
-  document.getElementById('calc-display').value = text === '' ? '0' : text;
+  const display = document.getElementById('calc-display');
+  display.textContent = text === '' ? '0' : text;
+  // Tiene visibile la parte finale dell'espressione mentre si scrive/scorre
+  display.scrollTop = display.scrollHeight;
 }
 
 function calcSetAngleMode(mode) {
@@ -363,6 +366,22 @@ function calcEvaluate() {
   }
 }
 
+function calcAppend(str) {
+  calcExpression += str;
+  calcUpdateDisplay(calcExpression);
+}
+
+function calcClear() {
+  calcExpression = '';
+  document.getElementById('calc-history').textContent = '';
+  calcUpdateDisplay('');
+}
+
+function calcBackspace() {
+  calcExpression = calcExpression.slice(0, -1);
+  calcUpdateDisplay(calcExpression);
+}
+
 function initCalculator() {
   calcSetAngleMode('deg');
 
@@ -370,29 +389,51 @@ function initCalculator() {
   document.getElementById('calc-mode-rad').addEventListener('click', () => calcSetAngleMode('rad'));
 
   document.querySelectorAll('[data-calc-val]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      calcExpression += btn.dataset.calcVal;
-      calcUpdateDisplay(calcExpression);
-    });
+    btn.addEventListener('click', () => calcAppend(btn.dataset.calcVal));
   });
 
   document.querySelectorAll('[data-calc-fn]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      calcExpression += btn.dataset.calcFn;
-      calcUpdateDisplay(calcExpression);
-    });
+    btn.addEventListener('click', () => calcAppend(btn.dataset.calcFn));
   });
 
-  document.getElementById('calc-clear').addEventListener('click', () => {
-    calcExpression = '';
-    document.getElementById('calc-history').textContent = '';
-    calcUpdateDisplay('');
-  });
-
-  document.getElementById('calc-backspace').addEventListener('click', () => {
-    calcExpression = calcExpression.slice(0, -1);
-    calcUpdateDisplay(calcExpression);
-  });
-
+  document.getElementById('calc-clear').addEventListener('click', calcClear);
+  document.getElementById('calc-backspace').addEventListener('click', calcBackspace);
   document.getElementById('calc-equals').addEventListener('click', calcEvaluate);
+
+  // Supporto tastiera fisica, attivo solo mentre la calcolatrice è aperta.
+  document.addEventListener('keydown', (e) => {
+    const modal = document.getElementById('calculator-modal');
+    if (modal.classList.contains('hidden')) return;
+
+    // Cifre e operatori base digitabili direttamente
+    if (/^[0-9.+\-*/()%]$/.test(e.key)) {
+      e.preventDefault();
+      calcAppend(e.key);
+      return;
+    }
+
+    switch (e.key) {
+      case 'Enter':
+      case '=':
+        e.preventDefault();
+        calcEvaluate();
+        break;
+      case 'Backspace':
+        e.preventDefault();
+        calcBackspace();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        closeCalculator();
+        break;
+      case 'Delete':
+        e.preventDefault();
+        calcClear();
+        break;
+      case '^':
+        e.preventDefault();
+        calcAppend('^');
+        break;
+    }
+  });
 }
