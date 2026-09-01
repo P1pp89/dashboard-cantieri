@@ -104,8 +104,9 @@
 
       <div class="mb-3">
         <div id="calc-history" class="h-4 text-right text-[11px] text-slate-500 font-mono truncate"></div>
-        <input id="calc-display" type="text" readonly value="0"
-          class="w-full text-right text-2xl font-mono bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 truncate">
+        <div id="calc-display"
+          class="w-full text-right text-2xl font-mono bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 break-all overflow-y-auto"
+          style="max-height: 4.5rem; min-height: 2.5rem;">0</div>
       </div>
 
       <div class="grid grid-cols-2 gap-1.5 mb-1.5">
