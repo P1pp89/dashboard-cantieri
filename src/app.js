@@ -47,6 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cancel-modal').addEventListener('click', closeProjectModal);
   document.getElementById('project-form').addEventListener('submit', handleFormSubmit);
 
+  document.getElementById('btn-open-calculator').addEventListener('click', openCalculator);
+  document.getElementById('btn-close-calculator').addEventListener('click', closeCalculator);
+  initCalculator();
+
   // Gestisce sia la sessione già attiva sia il redirect di ritorno da GitHub
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session) {
@@ -65,6 +69,7 @@ function showLoginScreen() {
   document.getElementById('auth-modal').classList.remove('hidden');
   document.getElementById('btn-logout').classList.add('hidden');
   document.getElementById('btn-add-project').classList.add('hidden');
+  document.getElementById('btn-open-calculator').classList.add('hidden');
   document.getElementById('user-badge').classList.add('hidden');
 }
 
@@ -89,6 +94,7 @@ function showAppForUser(session) {
   document.getElementById('auth-modal').classList.add('hidden');
   document.getElementById('btn-logout').classList.remove('hidden');
   document.getElementById('btn-add-project').classList.remove('hidden');
+  document.getElementById('btn-open-calculator').classList.remove('hidden');
   const badge = document.getElementById('user-badge');
   badge.textContent = `@${username}`;
   badge.classList.remove('hidden');
@@ -264,4 +270,129 @@ function openProjectModal(index) {
   document.getElementById('form-cost-labor').value = p ? (p.costs?.labor || 0) : 0;
   document.getElementById('form-cost-rentals').value = p ? (p.costs?.rentals || 0) : 0;
   document.getElementById('project-modal').classList.remove('hidden');
+}
+
+// ---------------------------------------------------------------------
+// Calcolatrice Scientifica
+// ---------------------------------------------------------------------
+
+let calcExpression = '';
+let calcAngleMode = 'deg'; // 'deg' | 'rad'
+
+function openCalculator() {
+  document.getElementById('calculator-modal').classList.remove('hidden');
+}
+
+function closeCalculator() {
+  document.getElementById('calculator-modal').classList.add('hidden');
+}
+
+function calcUpdateDisplay(text) {
+  document.getElementById('calc-display').value = text === '' ? '0' : text;
+}
+
+function calcSetAngleMode(mode) {
+  calcAngleMode = mode;
+  const degBtn = document.getElementById('calc-mode-deg');
+  const radBtn = document.getElementById('calc-mode-rad');
+  const active = 'bg-emerald-600 text-white';
+  const inactive = 'bg-slate-700 text-slate-300';
+  degBtn.className = `calc-mode-btn text-[10px] uppercase tracking-wider py-1 rounded font-semibold ${mode === 'deg' ? active : inactive}`;
+  radBtn.className = `calc-mode-btn text-[10px] uppercase tracking-wider py-1 rounded font-semibold ${mode === 'rad' ? active : inactive}`;
+}
+
+// Traduce l'espressione mostrata all'utente (es. "sin(30)", "2^3", "%")
+// in un'espressione JS valutabile solo con le funzioni matematiche consentite.
+function calcToEvaluable(expr) {
+  let out = expr
+    .replace(/\^/g, '**')
+    .replace(/%/g, '/100')
+    .replace(/pi/g, 'PI')
+    .replace(/\be\b/g, 'E');
+
+  // sin/cos/tan lavorano in gradi se calcAngleMode === 'deg'
+  if (calcAngleMode === 'deg') {
+    out = out.replace(/sin\(/g, 'sinDeg(')
+             .replace(/cos\(/g, 'cosDeg(')
+             .replace(/tan\(/g, 'tanDeg(');
+  } else {
+    out = out.replace(/sin\(/g, 'sin(')
+             .replace(/cos\(/g, 'cos(')
+             .replace(/tan\(/g, 'tan(');
+  }
+  out = out.replace(/log\(/g, 'log10(').replace(/ln\(/g, 'log(');
+  return out;
+}
+
+function calcEvaluate() {
+  if (!calcExpression) return;
+  try {
+    const evaluable = calcToEvaluable(calcExpression);
+    // Whitelist rigorosa: solo cifre, operatori matematici e nomi di funzione consentiti.
+    if (/[^0-9+\-*/().\s,a-zA-Z]/.test(evaluable)) throw new Error('invalid characters');
+
+    const scope = {
+      PI: Math.PI,
+      E: Math.E,
+      sqrt: Math.sqrt,
+      log10: Math.log10,
+      log: Math.log,
+      sinDeg: (d) => Math.sin(d * Math.PI / 180),
+      cosDeg: (d) => Math.cos(d * Math.PI / 180),
+      tanDeg: (d) => Math.tan(d * Math.PI / 180),
+      sin: Math.sin,
+      cos: Math.cos,
+      tan: Math.tan
+    };
+    const argNames = Object.keys(scope);
+    const argValues = argNames.map(k => scope[k]);
+    // eslint-disable-next-line no-new-func
+    const fn = new Function(...argNames, `"use strict"; return (${evaluable});`);
+    const result = fn(...argValues);
+
+    if (typeof result !== 'number' || !isFinite(result)) throw new Error('math error');
+
+    const rounded = Math.round(result * 1e10) / 1e10;
+    document.getElementById('calc-history').textContent = calcExpression + ' =';
+    calcExpression = String(rounded);
+    calcUpdateDisplay(calcExpression);
+  } catch (err) {
+    document.getElementById('calc-history').textContent = '';
+    calcExpression = '';
+    calcUpdateDisplay('Errore');
+  }
+}
+
+function initCalculator() {
+  calcSetAngleMode('deg');
+
+  document.getElementById('calc-mode-deg').addEventListener('click', () => calcSetAngleMode('deg'));
+  document.getElementById('calc-mode-rad').addEventListener('click', () => calcSetAngleMode('rad'));
+
+  document.querySelectorAll('[data-calc-val]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      calcExpression += btn.dataset.calcVal;
+      calcUpdateDisplay(calcExpression);
+    });
+  });
+
+  document.querySelectorAll('[data-calc-fn]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      calcExpression += btn.dataset.calcFn;
+      calcUpdateDisplay(calcExpression);
+    });
+  });
+
+  document.getElementById('calc-clear').addEventListener('click', () => {
+    calcExpression = '';
+    document.getElementById('calc-history').textContent = '';
+    calcUpdateDisplay('');
+  });
+
+  document.getElementById('calc-backspace').addEventListener('click', () => {
+    calcExpression = calcExpression.slice(0, -1);
+    calcUpdateDisplay(calcExpression);
+  });
+
+  document.getElementById('calc-equals').addEventListener('click', calcEvaluate);
 }
