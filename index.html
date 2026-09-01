@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Contabilità Cantieri</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .calc-btn {
+      padding: 0.5rem 0;
+      border-radius: 0.5rem;
+      background-color: rgb(51 65 85 / 1); /* slate-700 */
+      color: rgb(241 245 249 / 1); /* slate-100 */
+      font-family: ui-monospace, monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid rgb(51 65 85 / 1);
+      transition: background-color 0.15s;
+    }
+    .calc-btn:hover { background-color: rgb(71 85 105 / 1); } /* slate-600 */
+    .calc-btn.calc-op { color: rgb(52 211 153 / 1); } /* emerald-400 */
+    .calc-btn.calc-sci { font-size: 0.75rem; color: rgb(251 191 36 / 1); } /* amber-400 */
+  </style>
 </head>
 <body class="h-full flex flex-col font-sans">
 
@@ -78,6 +94,65 @@
     </div>
   </div>
 
+  <!-- Modal Calcolatrice Scientifica -->
+  <div id="calculator-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-40 hidden">
+    <div class="bg-slate-800 border border-slate-700 p-5 rounded-xl shadow-2xl w-full max-w-xs">
+      <div class="flex justify-between items-center mb-3 border-b border-slate-700 pb-3">
+        <h3 class="text-sm font-bold text-slate-100">Calcolatrice Scientifica</h3>
+        <button id="btn-close-calculator" class="text-slate-400 hover:text-slate-200 text-xl font-bold leading-none">&times;</button>
+      </div>
+
+      <div class="mb-3">
+        <div id="calc-history" class="h-4 text-right text-[11px] text-slate-500 font-mono truncate"></div>
+        <input id="calc-display" type="text" readonly value="0"
+          class="w-full text-right text-2xl font-mono bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 truncate">
+      </div>
+
+      <div class="grid grid-cols-2 gap-1.5 mb-1.5">
+        <button id="calc-mode-deg" class="calc-mode-btn text-[10px] uppercase tracking-wider py-1 rounded bg-emerald-600 text-white font-semibold">Deg</button>
+        <button id="calc-mode-rad" class="calc-mode-btn text-[10px] uppercase tracking-wider py-1 rounded bg-slate-700 text-slate-300 font-semibold">Rad</button>
+      </div>
+
+      <div class="grid grid-cols-5 gap-1.5">
+        <button data-calc-fn="sin(" class="calc-btn calc-sci">sin</button>
+        <button data-calc-fn="cos(" class="calc-btn calc-sci">cos</button>
+        <button data-calc-fn="tan(" class="calc-btn calc-sci">tan</button>
+        <button data-calc-fn="log(" class="calc-btn calc-sci">log</button>
+        <button data-calc-fn="ln(" class="calc-btn calc-sci">ln</button>
+
+        <button data-calc-fn="sqrt(" class="calc-btn calc-sci">√</button>
+        <button data-calc-val="^" class="calc-btn calc-sci">x^y</button>
+        <button data-calc-val="(" class="calc-btn calc-sci">(</button>
+        <button data-calc-val=")" class="calc-btn calc-sci">)</button>
+        <button id="calc-clear" class="calc-btn bg-rose-950/50 text-rose-300 border-rose-800">C</button>
+
+        <button data-calc-val="7" class="calc-btn">7</button>
+        <button data-calc-val="8" class="calc-btn">8</button>
+        <button data-calc-val="9" class="calc-btn">9</button>
+        <button data-calc-val="/" class="calc-btn calc-op">÷</button>
+        <button id="calc-backspace" class="calc-btn calc-op">⌫</button>
+
+        <button data-calc-val="4" class="calc-btn">4</button>
+        <button data-calc-val="5" class="calc-btn">5</button>
+        <button data-calc-val="6" class="calc-btn">6</button>
+        <button data-calc-val="*" class="calc-btn calc-op">×</button>
+        <button data-calc-val="%" class="calc-btn calc-op">%</button>
+
+        <button data-calc-val="1" class="calc-btn">1</button>
+        <button data-calc-val="2" class="calc-btn">2</button>
+        <button data-calc-val="3" class="calc-btn">3</button>
+        <button data-calc-val="-" class="calc-btn calc-op">−</button>
+        <button data-calc-val="pi" class="calc-btn calc-sci">π</button>
+
+        <button data-calc-val="0" class="calc-btn">0</button>
+        <button data-calc-val="." class="calc-btn">.</button>
+        <button data-calc-val="e" class="calc-btn calc-sci">e</button>
+        <button data-calc-val="+" class="calc-btn calc-op">+</button>
+        <button id="calc-equals" class="calc-btn bg-emerald-600 hover:bg-emerald-500 text-white">=</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Header -->
   <header class="border-b border-slate-800 bg-slate-900/50 px-6 py-4 flex justify-between items-center">
     <div class="flex items-center space-x-3">
@@ -86,6 +161,7 @@
     </div>
     <div class="flex items-center space-x-3">
       <span id="user-badge" class="hidden text-xs text-slate-400"></span>
+      <button id="btn-open-calculator" class="hidden text-xs bg-slate-700 hover:bg-slate-600 text-slate-100 font-semibold px-3 py-1.5 rounded-md transition shadow-md">🧮 Calcolatrice</button>
       <button id="btn-add-project" class="hidden text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-md transition shadow-md">+ Nuova Commessa</button>
       <button id="btn-logout" class="hidden text-xs text-slate-400 hover:text-rose-400 border border-slate-700 px-3 py-1.5 rounded-md">Logout</button>
     </div>
